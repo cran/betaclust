@@ -8,14 +8,14 @@
 #' \itemize{
 #' \item C - The number of CpG sites analysed using the beta mixture models.
 #' \item N - The number of patients analysed using the beta mixture models.
-#' \item R - The number of samples analysed using the beta mixture models.
+#' \item R - The number of sample types analysed using the beta mixture models.
 #' \item K - The number of methylation states in R DNA samples.
 #' \item modelName - The optimal model selected.
 #' \item loglik - The log-likelihood value for the selected optimal model.
 #' \item information_criterion - The information criterion used to select the optimal model.
 #' \item ic_output - This stores the information criterion value calculated for each model.
 #' \item classification - The total number of CpG sites in each cluster.
-#' \item prop_data - The proportion of CpG sites in each cluster.}
+#' \item prop_data - The estimated mixing proportion for each cluster.}
 #' @examples
 #' \donttest{
 #' my.seed <- 190
@@ -34,11 +34,8 @@ summary.betaclust<-function(object,...)
   ic_value=min(object$ic_output)
   clust_count=length(object$optimal_model_results$cluster_size)
   loglik=object$optimal_model_results$llk[length(object$optimal_model_results$llk)]
-  #classification<-as.factor(object$optimal_model_results$data[,ncol(object$optimal_model_results$data)])
-  #clustering<-as.factor(object$optimal_model_results$data[,ncol(object$optimal_model_results$data)])
- # classification<-table(as.factor(object$optimal_model_results$data[,ncol(object$optimal_model_results$data)]))
   classification<-table(as.factor(object$optimal_model_results$classification))
-  prop_data<-round((as.numeric(object$optimal_model_results$cluster_size)/object$C),3)
+  prop_data<-round(as.numeric(object$optimal_model_results$tau),3)
   obj <- list(title = title,
               C=object$C,
               N=object$N,

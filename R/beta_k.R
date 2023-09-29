@@ -1,11 +1,11 @@
 globalVariables(c("k"))
 #' @title Fit the K.. model
 #' @description Fit the K.. model from the \code{\link[betaclust:betaclust]{betaclust}} family of beta mixture models for DNA methylation data.
-#'              The K.. model analyses a single DNA sample and identifies the thresholds between the different methylation states.
+#'              The K.. model analyses a single DNA sample type and identifies the thresholds between the different methylation states.
 #'
 #' @export
 #'
-#' @details The K.. model clusters each of the \eqn{C} CpG sites into one of \eqn{K} methylation states, based on data from \eqn{N} patients for one DNA sample (i.e. \eqn{R = 1}).
+#' @details The K.. model clusters each of the \eqn{C} CpG sites into one of \eqn{K} methylation states, based on data from \eqn{N} patients for one DNA sample type (i.e. \eqn{R = 1}).
 #' As each CpG site can belong to any of the \eqn{M = 3} methylation states (hypomethylated, hemimethylated or hypermethylated), the default value of \eqn{K = M = 3}.
 #' Under the K.. model the shape parameters of each cluster are constrained to be equal for each patient. The returned object from this function can be passed as an input parameter to the
 #' \code{\link[betaclust:threshold]{threshold}} function available in this package to calculate the thresholds between the methylation states.
@@ -14,9 +14,9 @@ globalVariables(c("k"))
 #' @seealso \code{\link{betaclust}}
 #' @seealso \code{\link{threshold}}
 #'
-#' @param data A dataframe of dimension \eqn{C \times N} containing methylation values for \eqn{C} CpG sites from \eqn{R = 1} samples collected from \eqn{N} patients.
+#' @param data A dataframe of dimension \eqn{C \times N} containing methylation values for \eqn{C} CpG sites from \eqn{R = 1} sample type collected from \eqn{N} patients.
 #' Samples are grouped together in the dataframe such that the columns are ordered as Sample1_Patient1, Sample1_Patient2, etc.
-#' @param M Number of methylation states to be identified in a DNA sample.
+#' @param M Number of methylation states to be identified in a DNA sample type.
 #' @param parallel_process The "TRUE" option results in parallel processing of the models for increased computational efficiency. The default option has been set as "FALSE" due to package testing limitations.
 #' @param seed Seed to allow for reproducibility (default = NULL).
 #'
@@ -27,7 +27,7 @@ globalVariables(c("k"))
 #'    \item llk - A vector containing the log-likelihood value at each step of the EM algorithm.
 #'    \item alpha - The first shape parameter for the beta mixture model.
 #'    \item delta - The second shape parameter for the beta mixture model.
-#'    \item tau - The proportion of CpG sites in each cluster.
+#'    \item tau - The estimated mixing proportion for each cluster.
 #'    \item z - A matrix of dimension \eqn{C \times K} containing the posterior probability of each CpG site belonging to each of the \eqn{K} clusters.
 #'    \item classification - The classification corresponding to z, i.e. map(z).
 #'    \item uncertainty - The uncertainty of each CpG site's clustering.    }
@@ -259,21 +259,18 @@ beta_k<-function(data,M=3,parallel_process=FALSE,seed = NULL){
 
   ## Clustering
   mem_final<-matrix(NA,C,1)
-  #complete_data<-matrix(NA,C,(N+1))
   mem_final<-apply(z_new, 1, which.max)
   classification=mem_final
-  #complete_data<-cbind(x,mem_final)
   cluster_count=table(mem_final)
 
   ### Uncertainty
   cert=apply(z_new,1,max)
   uc=1-cert
 
-  tau=round((as.numeric(cluster_count)/C),3)
-
   parallel::stopCluster(cl=my.cluster)
 
   #### Return data
-  return(list(cluster_size=cluster_count,llk=llk_iter,alpha=alpha,delta=delta,tau=tau,z=z_new,classification=classification,uncertainty=uc))
+  return(list(cluster_size=cluster_count,llk=llk_iter,alpha=alpha,delta=delta,
+              tau=tau,z=z_new,classification=classification,uncertainty=uc))
 
 }

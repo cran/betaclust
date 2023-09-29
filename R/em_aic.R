@@ -8,14 +8,12 @@
 #' @param C Number of CpG sites.
 #' @param M Number of methylation states identified in a DNA sample.
 #' @param N Number of patients.
-#' @param R Number of DNA samples collected from each patient.
+#' @param R Number of DNA sample types collected from each patient.
 #' @param model_name Fitted mixture model. Options are "K..", "KN." and/or "K.R" (default = "K..").
 #' @return The AIC value for the selected model.
 
 em_aic<-function(llk,C,M,N,R,model_name="K.."){
 
-  #R=samples
-  #N=patients
   mod_len=length(model_name)
   aic=vector("numeric",mod_len)
 

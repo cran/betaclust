@@ -1,22 +1,22 @@
 globalVariables(c("k"))
 #' @title Fit the K.R Model
 #' @export
-#' @description A beta mixture model for identifying differentially methylated CpG sites between \eqn{R} DNA samples collected from \eqn{N} patients.
+#' @description A beta mixture model for identifying differentially methylated CpG sites between \eqn{R} DNA sample types collected from \eqn{N} patients.
 #'
 #' @seealso \code{\link{betaclust}}
 #'
-#' @param data A dataframe of dimension \eqn{C \times NR} containing methylation values for \eqn{C} CpG sites from \eqn{R} samples collected from \eqn{N} patients.
+#' @param data A dataframe of dimension \eqn{C \times NR} containing methylation values for \eqn{C} CpG sites from \eqn{R} sample types collected from \eqn{N} patients.
 #' Samples are grouped together in the dataframe such that the columns are ordered as Sample1_Patient1, Sample1_Patient2, Sample2_Patient1, Sample2_Patient2, etc.
 #' @param M Number of methylation states to be identified.
 #' @param N Number of patients in the study.
-#' @param R Number of samples collected from each patient for study.
+#' @param R Number of sample types collected from each patient for study.
 #' @param parallel_process The "TRUE" option results in parallel processing of the models for increased computational efficiency. The default option has been set as "FALSE" due to package testing limitations.
 #' @param seed Seed to allow for reproducibility (default = NULL).
 #'
 #' @details
-#' The K.R model allows identification of the differentially methylated CpG sites between the \eqn{R} DNA samples collected from each of \eqn{N} patients.
-#' As each CpG site in a DNA sample can belong to one of \eqn{M} methylation states, there can be \eqn{K=M^R} methylation state changes between \eqn{R} DNA samples.
-#' The shape parameters vary for each DNA sample but are constrained to be equal for each patient. An initial clustering using k-means is performed to identify \eqn{K} clusters. The resulting clustering solution is provided as
+#' The K.R model allows identification of the differentially methylated CpG sites between the \eqn{R} DNA sample types collected from each of \eqn{N} patients.
+#' As each CpG site in a DNA sample can belong to one of \eqn{M} methylation states, there can be \eqn{K=M^R} methylation state changes between \eqn{R} DNA sample types.
+#' The shape parameters vary for each DNA sample type but are constrained to be equal for each patient. An initial clustering using k-means is performed to identify \eqn{K} clusters. The resulting clustering solution is provided as
 #' starting values to the Expectation-Maximisation algorithm. A digamma approximation is used to obtain the maximised
 #' parameters in the M-step.
 #' @return A list containing:
@@ -25,10 +25,11 @@ globalVariables(c("k"))
 #'    \item llk - A vector containing the log-likelihood value at each step of the EM algorithm.
 #'    \item alpha - The first shape parameter for the beta mixture model.
 #'    \item delta - The second shape parameter for the beta mixture model.
-#'    \item tau - The proportion of CpG sites in each cluster.
+#'    \item tau - The estimated mixing proportion for each cluster.
 #'    \item z - A matrix of dimension \eqn{C \times K} containing the posterior probability of each CpG site belonging to each of the \eqn{K} clusters.
 #'    \item classification - The classification corresponding to z, i.e. map(z).
-#'    \item uncertainty - The uncertainty of each CpG site's clustering.    }
+#'    \item uncertainty - The uncertainty of each CpG site's clustering.
+#'    \item DM - The AUC and WD metric for distribution similarity in each cluster. }
 #'
 #' @examples
 #' my.seed <- 190
@@ -94,14 +95,12 @@ beta_kr<-function(data,M=3,N,R,parallel_process=FALSE,seed=NULL){
     mem <- k_cluster$cluster
     data_clust<-cbind(X,mem)
 
-    ## Get values for parameters C (no. of CpG sites), N (No. of patients), R (No. of samples)
+    ## Get values for parameters C (no. of CpG sites), N (No. of patients), R (No. of sample types)
     x=as.matrix(data_clust)
     mem=x[,ncol(x)]
     data_full=x
     x=x[,-ncol(x)]
     C=nrow(x)
-    #R=samples
-    #N=patients
 
     ##  starting values from initial clustering
     mu=matrix(NA,ncol=R,nrow = K)
@@ -179,7 +178,7 @@ beta_kr<-function(data,M=3,N,R,parallel_process=FALSE,seed=NULL){
       z_estimation = function(x,al,de,p,R,N)
       {
         l3=1
-        for(r in 1:R) ##no. of samples
+        for(r in 1:R) ##no. of sample types
         {
 
           l3=l3*stats::dbeta(x[,(((r-1)*N)+1):(((r-1)*N)+N)],al[r],de[r])
@@ -281,20 +280,21 @@ beta_kr<-function(data,M=3,N,R,parallel_process=FALSE,seed=NULL){
   complete_data<-matrix(NA,C,(N*R+1))
   mem_final<-apply(z_new, 1, which.max)
   complete_data<-cbind(x,mem_final)
- # cluster_count=table(mem_final)
-
-
-  ### uncertainty
-  #cert=apply(z_new,1,max)
-  #uc=1-cert
 
   parallel::stopCluster(cl=my.cluster)
 
-  #### Sorting the clusters as per interest
-  mean_delta=as.data.frame(alpha/(alpha+delta))
-  mean_delta$diff<-abs(mean_delta$V1-mean_delta$V2)
-  mean_sorted<-mean_delta[order(mean_delta$diff,decreasing = T),]
-  mean_row<-row.names(mean_sorted)
+  #### Sorting the clusters as per AUC and WD
+
+  auc_wd<-AUC_WD_metric(alpha,delta,K,R)
+  auc=apply(auc_wd$AUC, 1, max)
+  wd=apply(auc_wd$WD, 1, max)
+  clust_order<-data.frame(seq(1:K),auc,wd)
+  colnames(clust_order)<-c("clust","auc","wd")
+  clust_order<-clust_order[order(clust_order$auc,clust_order$wd,decreasing = T),]
+  auc_wd$AUC<-clust_order$auc
+  auc_wd$WD<-clust_order$wd
+  mean_row=clust_order$clust
+
   data_final=as.data.frame(complete_data)
   data_final$mem_final<-as.numeric(data_final$mem_final)
   data_final$new_mem_final<-NA
@@ -316,16 +316,15 @@ beta_kr<-function(data,M=3,N,R,parallel_process=FALSE,seed=NULL){
   data_final<-data_final[,-(N*R+1)]
   colnames(data_final)[(N*R+1)]<-"mem_final"
   data_final$mem_final<-as.factor(data_final$mem_final)
-  classification=as.factor(as.vector(data_final$mem_final))
   cert_final=apply(z_final,1,max)
+  classification=as.factor(apply(z_final, 1, which.max))
   uc_final=1-cert_final
-  cluster_count=table(data_final$mem_final)
-  tau_final=round((as.numeric(cluster_count)/C),3)
+  cluster_count=table(classification)
 
   #### Return data
-  #return(list(cluster_count=cluster_count,llk=llk_iter,data=complete_data,alpha=alpha,delta=delta,tau=tau,z=z_new,uncertainty=uc))
   return(list(cluster_size=cluster_count,llk=llk_iter,
               alpha=alpha_final,delta=delta_final,tau=tau_final,
-              z=z_final,classification=classification,uncertainty=uc_final))
+              z=z_final,classification=classification,uncertainty=uc_final,
+              DM=auc_wd))
 
 }

@@ -40,6 +40,9 @@ threshold_out <- betaclust(pca.methylation.data[,2:5], M, N, R,
 ## ----output0,include=TRUE, echo=TRUE------------------------------------------
 summary(threshold_out)
 
+## ----wrapperoutput3,include=TRUE, echo=TRUE,fig.width = 4, fig.height = 4,dev = 'png'----
+plot(threshold_out, what = "information criterion", plot_type = "ggplot")
+
 ## ----output1,include=TRUE, echo=TRUE------------------------------------------
 threshold_points <- threshold_out$optimal_model_results$thresholds
 threshold_points$threholds
@@ -63,6 +66,10 @@ dmc_output <- betaclust(pca.methylation.data[,2:9], M, N, R,
                       model_names = "K.R", parallel_process = FALSE,
                       seed = my.seed)
 
+## ----dmcoutput4b, include=TRUE, echo=TRUE-------------------------------------
+print(dmc_output$optimal_model_results$DM$AUC)
+print(dmc_output$optimal_model_results$DM$WD)
+
 ## ----dmcoutput1,include=TRUE, echo=TRUE---------------------------------------
 summary(dmc_output)
 
@@ -70,22 +77,19 @@ summary(dmc_output)
 plot(dmc_output, what = "fitted density", plot_type = "ggplot", data = pca.methylation.data[,2:9], sample_name = c("Benign","Tumour"))
 
 ## ----dmcoutput3,include=TRUE, echo=TRUE,fig.width = 6.5, fig.height = 5,dev = 'png'----
-plot(dmc_output, what = "kernel density",plot_type = "ggplot", data = pca.methylation.data[,2:9])
+plot(dmc_output, what = "kernel density", plot_type = "ggplot", data = pca.methylation.data[,2:9])
 
 ## ----dmcoutput4,include=TRUE, echo=TRUE,fig.width = 6, fig.height = 5, dev = 'png'----
 plot(dmc_output, what = "uncertainty", plot_type = "ggplot")
 
+## ----dmcoutput6,include=TRUE, echo=TRUE,fig.width = 6, fig.height = 5, dev = 'png'----
+
+## the dataframe containing methylation data for the CpG sites identified as the most differentially methylated ones
+dmc_df <- DMC_identification(dmc_output, data = pca.methylation.data[,2:9],
+                             pca.methylation.data[,1], threshold = 0.06,
+                             metric="WD")
+
 ## ----dmcoutput5,include=TRUE, echo=TRUE,fig.width = 6, fig.height = 5,dev = 'png'----
-## save the clustering solution in a dataframe
-dmc_df <- dmc_output$optimal_model_results$classification
-
-## merge the IlmnID and methylation values to the classification and change the final column name to classification
-dmc_df <- as.data.frame(cbind(pca.methylation.data[,1:9],dmc_df))
-colnames(dmc_df)[ncol(dmc_df)] <- "classification"
-
-## select the differentially methylated CpG sites identified using the K.R model
-dmc_df <- dmc_df[dmc_df$classification == "1" |dmc_df$classification == "2" |dmc_df$classification == "3"|
-                 dmc_df$classification == "4" , ]
 
 ##read the legacy data
 data(legacy.data)
@@ -117,19 +121,4 @@ ecdf_rarb <- dmc_df[dmc_df$IlmnID %in% cpg_rarb$IlmnID,]
 
 ## Plot the ecdf of the selected DMCs
 ecdf.betaclust(ecdf_rarb[,2:9], R = 2, sample_name = c("Benign","Tumour"))
-
-## ----wrapper,include=TRUE, echo=TRUE------------------------------------------
-wrapper_out <- betaclust(pca.methylation.data[,2:9], M, N, R,
-                        model_names = c("K..","KN.","K.R"),
-                        model_selection = "BIC", parallel_process = FALSE,
-                        seed = my.seed)
-
-## ----wrapperoutput1,include=TRUE, echo=TRUE-----------------------------------
-summary(wrapper_out)
-
-## ----wrapperoutput2,include=TRUE, echo=TRUE,fig.width = 6.5, fig.height = 5,dev = 'png'----
-plot(wrapper_out, what = "fitted density", plot_type = "ggplot", data = pca.methylation.data[,2:9], sample_name = c("Benign","Tumour"))
-
-## ----wrapperoutput3,include=TRUE, echo=TRUE,fig.width = 4, fig.height = 4,dev = 'png'----
-plot(wrapper_out, what = "information criterion", plot_type = "ggplot")
 
