@@ -1,4 +1,4 @@
-8caca9be42112d326e844b956568a280 *DESCRIPTION
+c342f48d7f51c921a4a4d3621c82ecd7 *DESCRIPTION
 5722d944895361d733ab6f7eb3333419 *NAMESPACE
 a9d8657332b8fd5e43e056c61cb95948 *NEWS.md
 335741f005a91803bf2c8e8dadfdf318 *R/AUC_WD_metric.R
@@ -18,13 +18,13 @@ dcad6a70a7acb2a0762fee87e95e6f28 *R/plot.betaclust.R
 6a87353554aa1da29a156ebedd9723a4 *R/summary.betaclust.R
 61aaf8dcae4f269208b83626ad326e6e *R/threshold.R
 0034b7eb086caab47d68196cd81ca9a2 *README.md
-20ec6ab93e6778ebba47fb899f7ffbb4 *build/partial.rdb
-31186f10444b9afea10a92ce0cdda2ac *build/vignette.rds
+2836b2c5db38c9819380bd093383d89d *build/partial.rdb
+31ff837a65434dfcb8b1fb365cb5de37 *build/vignette.rds
 0fd435f49294583b343a2982f3475a2e *data/legacy.data.rda
 01bc5de4716984a8ebb643b9487a2367 *data/pca.methylation.data.rda
 f695a21dc5a1cc5902770e21a9597771 *inst/doc/vignettes.R
 195138a6ce8823b142e74233824d6d10 *inst/doc/vignettes.Rmd
-70e378e9d5d50e23991a18c155d08085 *inst/doc/vignettes.html
+09e50c11d67da57d7a0f4e16d0af5a62 *inst/doc/vignettes.html
 b2769005b91d49cf1cf5a427ca153947 *man/AUC_WD_metric.Rd
 85feb3bc569383330a4fa8cb17ba8f1c *man/DMC_identification.Rd
 52ca1a66567066d965b37c7263d43c4d *man/beta_k.Rd
